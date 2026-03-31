@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.LinkMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.biz.Link">
+        <!--@mbg.generated-->
+        <!--@Table link-->
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="link_type" jdbcType="INTEGER" property="linkType"/>
+        <result column="link_name" jdbcType="VARCHAR" property="linkName"/>
+        <result column="link_url" jdbcType="VARCHAR" property="linkUrl"/>
+        <result column="email" jdbcType="VARCHAR" property="email"/>
+        <result column="order_num" jdbcType="INTEGER" property="orderNum"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        id, link_type, link_name, link_url, email, order_num, create_by, create_time, update_by,
+        update_time, remark
+    </sql>
+    <sql id="findLinkVo">
+        select
+        <include refid="Base_Column_List"/>
+        from link
+    </sql>
+    <!--
+       /**
+         * 查询友情链接列表
+         *
+         * @param link 友情链接
+         *
+         * @return 友情链接集合
+         */
+        IPage<Link> findPage(Page<Link> linkPage, @Param("link") Link link);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        <include refid="findLinkVo"/>
+        <where>
+            <if test="link.linkType != null  and link.linkType != ''">
+                and link_type = #{link.linkType}
+            </if>
+            <if test="link.linkName != null  and link.linkName != ''">
+                and link_name like concat('%', #{link.linkName}, '%')
+            </if>
+            <if test="link.linkUrl != null  and link.linkUrl != ''">
+                and link_url = #{link.linkUrl}
+            </if>
+            <if test="link.email != null  and link.email != ''">
+                and email like concat('%', #{link.email}, '%')
+            </if>
+        </where>
+        order by order_num, id desc
+    </select>
+</mapper>

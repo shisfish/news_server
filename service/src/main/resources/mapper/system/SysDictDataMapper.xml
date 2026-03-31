@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.system.SysDictDataMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.system.SysDictData">
+        <!--@mbg.generated-->
+        <!--@Table sys_dict_data-->
+        <id column="dict_code" jdbcType="BIGINT" property="dictCode"/>
+        <result column="dict_sort" jdbcType="INTEGER" property="dictSort"/>
+        <result column="dict_label" jdbcType="VARCHAR" property="dictLabel"/>
+        <result column="dict_value" jdbcType="VARCHAR" property="dictValue"/>
+        <result column="dict_type" jdbcType="VARCHAR" property="dictType"/>
+        <result column="css_class" jdbcType="VARCHAR" property="cssClass"/>
+        <result column="list_class" jdbcType="VARCHAR" property="listClass"/>
+        <result column="is_default" jdbcType="CHAR" property="isDefault"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default,
+        status, create_by, create_time, update_by, update_time, remark
+    </sql>
+    <sql id="findDictDataVo">
+        select dict_code,
+               dict_sort,
+               dict_label,
+               dict_value,
+               dict_type,
+               css_class,
+               list_class,
+               is_default,
+               status,
+               create_by,
+               create_time,
+               remark
+        from sys_dict_data
+    </sql>
+    <!--
+        /**
+         * 根据条件分页查询字典数据
+         *
+         * @param dictData 字典数据信息
+         *
+         * @return 字典数据集合信息
+         */
+        IPage<SysDictData> findPage(Page<SysDictData> sysDictDataPage, @Param("dictData") SysDictData dictData);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        <include refid="findDictDataVo"/>
+        <where>
+            <if test="dictData.dictType != null and dictData.dictType != ''">
+                AND dict_type = #{dictData.dictType}
+            </if>
+            <if test="dictData.dictLabel != null and dictData.dictLabel != ''">
+                AND dict_label like '%${dictData.dictLabel}%'
+            </if>
+            <if test="dictData.status != null and dictData.status != ''">
+                AND status = #{dictData.status}
+            </if>
+        </where>
+        order by dict_sort
+    </select>
+    <!--
+       /**
+         * 同步修改字典类型
+         *
+         * @param oldDictType 旧字典类型
+         * @param newDictType 新旧字典类型
+         *
+         * @return 结果
+         */
+        void updateDictDataType(@Param("oldDictType") String oldDictType, @Param("newDictType") String newDictType);
+    -->
+    <update id="updateDictDataType">
+        update sys_dict_data
+        set dict_type = #{newDictType}
+        where dict_type = #{oldDictType}
+    </update>
+</mapper>

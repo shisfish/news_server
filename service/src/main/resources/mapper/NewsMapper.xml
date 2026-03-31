@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.NewsMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.biz.News">
+        <!--@mbg.generated-->
+        <!--@Table news-->
+        <id column="news_id" jdbcType="BIGINT" property="newsId"/>
+        <result column="user_id" jdbcType="BIGINT" property="userId"/>
+        <result column="news_type_id" jdbcType="BIGINT" property="newsTypeId"/>
+        <result column="subject" jdbcType="INTEGER" property="subject" />
+        <result column="news_title" jdbcType="LONGVARCHAR" property="newsTitle"/>
+        <result column="news_content" jdbcType="LONGVARCHAR" property="newsContent"/>
+        <result column="link" jdbcType="VARCHAR" property="link"/>
+        <result column="news_attr" jdbcType="CHAR" property="newsAttr"/>
+        <result column="news_image" jdbcType="VARCHAR" property="newsImage"/>
+        <result column="order_num" jdbcType="INTEGER" property="orderNum"/>
+        <result column="publish_time" jdbcType="VARCHAR" property="publishTime"/>
+        <result column="type" jdbcType="CHAR" property="type"/>
+        <result column="is_public" jdbcType="CHAR" property="isPublic"/>
+        <result column="thumbs" jdbcType="BIGINT" property="thumbs"/>
+        <result column="visits" jdbcType="BIGINT" property="visits"/>
+        <result column="comments" jdbcType="BIGINT" property="comments"/>
+        <result column="collects" jdbcType="BIGINT" property="collects"/>
+        <result column="news_source" jdbcType="VARCHAR" property="newsSource"/>
+        <result column="news_source_author" jdbcType="VARCHAR" property="newsSourceAuthor"/>
+        <result column="news_source_tags" jdbcType="VARCHAR" property="newsSourceTags"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+        <result column="del_flag" jdbcType="CHAR" property="delFlag"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+        <result column="to_static" jdbcType="CHAR" property="toStatic"/>
+        <result column="static_file_path" jdbcType="VARCHAR" property="staticFilePath"/>
+        <association property="newsType" javaType="com.shisfish.news.dao.domain.biz.NewsType" column="news_type_id"
+                     resultMap="newTypeResult"/>
+    </resultMap>
+
+    <!--新闻栏目结果集合-->
+    <resultMap id="newTypeResult" type="com.shisfish.news.dao.domain.biz.NewsType">
+        <id column="news_type_id" jdbcType="BIGINT" property="newsTypeId"/>
+        <result column="news_type_name" jdbcType="VARCHAR" property="newsTypeName"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        news_id,user_id,news_type_id, subject, news_title, news_content, link, publish_time, news_attr, news_image, order_num, type,
+        is_public, thumbs, visits, comments, collects, news_source,news_source_author,news_source_tags,status, del_flag, create_by, create_time,
+        update_by, update_time, remark, to_static, static_file_path
+    </sql>
+    <sql id="findNewsVo">
+        select n.news_id,
+               n.user_id,
+               n.news_type_id,
+               n.subject,
+               n.news_title,
+               -- 列表不需要返回富文本
+--                n.news_content,
+               n.link,
+               n.publish_time,
+               n.news_attr,
+               n.news_image,
+               n.order_num,
+               n.type,
+               n.is_public,
+               n.thumbs,
+               n.visits,
+               n.comments,
+               n.collects,
+               n.news_source,
+               n.news_source_author,
+               n.news_source_tags,
+               n.status,
+               n.del_flag,
+               n.create_by,
+               n.create_time,
+               n.update_by,
+               n.update_time,
+               n.remark,
+               n.to_static,
+               n.static_file_path,
+               nt.news_type_name
+        from news n
+                     left join news_type nt on n.news_type_id = nt.news_type_id
+    </sql>
+    <!--
+        /**
+         * 查询新闻列表
+         *
+         * @param news 新闻
+         *
+         * @return 新闻集合
+         */
+        IPage<News> findPage(Page<News> newsPage, @Param("news") News news);
+    -->
+    <select id="findPageAll" resultMap="BaseResultMap">
+        <include refid="findNewsVo"/>
+        where n.del_flag = '0'
+        <if test="news.newsTypeId != null">
+            and n.news_type_id = #{news.newsTypeId}
+        </if>
+        <if test="news.newsTitle != null  and news.newsTitle != ''">
+            and n.news_title like CONCAT('%', #{news.newsTitle}, '%')
+        </if>
+        <if test="news.newsAttr != null  and news.newsAttr != ''">
+            and n.news_attr = #{news.newsAttr}
+        </if>
+        <if test="news.isPublic != null  and news.isPublic != ''">
+            and n.is_public = #{news.isPublic}
+        </if>
+        <if test="news.type != null  and news.type != ''">
+            and n.type = #{news.type}
+        </if>
+        <if test="news.subject != null  and news.subject != ''">
+            and n.subject = #{news.subject}
+        </if>
+        <if test="news.status != null  and news.status != ''">
+            and n.status = #{news.status}
+        </if>
+        <if test="news.beginTime != null and news.beginTime != ''">
+            <!-- 开始时间检索 -->
+            AND date_format(n.create_time, '%y%m%d') &gt;= date_format(#{news.beginTime}, '%y%m%d')
+        </if>
+        <if test="news.endTime != null and news.endTime != ''">
+            <!-- 结束时间检索 -->
+            AND date_format( n.create_time,'%y%m%d')&lt;=date_format( #{news.endTime}, '%y%m%d')
+        </if>
+        order by n.order_num, n.publish_time desc, n.news_id desc
+    </select>
+    <!--
+        /**
+         * 根据用户id查询新闻列表
+         *
+         * @param news 新闻
+         *
+         * @return 新闻集合
+         */
+        IPage<News> findPageByUserId(Page<News> newsPage, @Param("news") News news);
+    -->
+    <select id="findPageByUserId" resultMap="BaseResultMap">
+        <include refid="findNewsVo"/>
+        left join sys_user su on n.user_id = su.user_id
+                where n.del_flag = '0'
+                  and su.user_id = #{userId}
+        <if test="news.newsTypeId != null">
+            and n.news_type_id = #{news.newsTypeId}
+        </if>
+        <if test="news.newsTitle != null  and news.newsTitle != ''">
+            and n.news_title like CONCAT('%', #{news.newsTitle}, '%')
+        </if>
+        <if test="news.newsAttr != null  and news.newsAttr != ''">
+            and n.news_attr = #{news.newsAttr}
+        </if>
+        <if test="news.isPublic != null  and news.isPublic != ''">
+            and n.is_public = #{news.isPublic}
+        </if>
+        <if test="news.type != null  and news.type != ''">
+            and n.type = #{news.type}
+        </if>
+        <if test="news.subject != null  and news.subject != ''">
+            and n.subject = #{news.subject}
+        </if>
+        <if test="news.status != null  and news.status != ''">
+            and n.status = #{news.status}
+        </if>
+        <if test="news.beginTime != null and news.beginTime != ''">
+            <!-- 开始时间检索 -->
+            AND date_format(n.create_time, '%y%m%d') &gt;= date_format(#{news.beginTime}, '%y%m%d')
+        </if>
+        <if test="news.endTime != null and news.endTime != ''">
+            <!-- 结束时间检索 -->
+            AND date_format( n.create_time,'%y%m%d')&lt;=date_format( #{news.endTime}, '%y%m%d')
+        </if>
+        order by n.order_num, n.create_time desc, n.news_id desc
+    </select>
+
+    <select id="findPageWithImage" resultMap="BaseResultMap">
+        <include refid="findNewsVo"/>
+        where n.del_flag = '0'
+        and n.news_image != '' and n.news_image is not null
+        <if test="news.newsTypeId != null">
+            and n.news_type_id = #{news.newsTypeId}
+        </if>
+        <if test="news.newsTitle != null  and news.newsTitle != ''">
+            and n.news_title like CONCAT('%', #{news.newsTitle}, '%')
+        </if>
+        <if test="news.newsAttr != null  and news.newsAttr != ''">
+            and n.news_attr = #{news.newsAttr}
+        </if>
+        <if test="news.isPublic != null  and news.isPublic != ''">
+            and n.is_public = #{news.isPublic}
+        </if>
+        <if test="news.type != null  and news.type != ''">
+            and n.type = #{news.type}
+        </if>
+        <if test="news.subject != null  and news.subject != ''">
+            and n.subject = #{news.subject}
+        </if>
+        <if test="news.status != null  and news.status != ''">
+            and n.status = #{news.status}
+        </if>
+        <if test="news.beginTime != null and news.beginTime != ''">
+            <!-- 开始时间检索 -->
+            AND date_format(n.create_time, '%y%m%d') &gt;= date_format(#{news.beginTime}, '%y%m%d')
+        </if>
+        <if test="news.endTime != null and news.endTime != ''">
+            <!-- 结束时间检索 -->
+            AND date_format( n.create_time,'%y%m%d')&lt;=date_format( #{news.endTime}, '%y%m%d')
+        </if>
+        order by n.order_num,n.create_time desc, n.news_id desc
+    </select>
+
+    <insert id="saveNewsBase" useGeneratedKeys="true">
+        insert into ${tableString}(user_id, news_type_name, type_name, news_title, news_content, publish_time, link, news_image, order_num, status_name, del_flag, create_by, create_time, update_by, update_time, remark, subject_name)
+                                         values
+        (#{newsBase.userId}, #{newsBase.newsTypeName}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+         #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.orderNum}, #{newsBase.statusName},
+         #{newsBase.delFlag}, #{newsBase.createBy}, #{newsBase.createTime}, #{newsBase.updateBy}, #{newsBase.updateTime},
+         #{newsBase.remark}, #{newsBase.subjectName});
+    </insert>
+</mapper>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.NewsWechatMapper">
+  <select id="listWithoutRel" resultType="com.shisfish.news.dao.domain.biz.NewsWechat">
+    select a.* from news_wechat a
+    left join news_wechat_rel b
+    on a.id = b.news_wechat_id
+    where b.id is null
+  </select>
+</mapper>

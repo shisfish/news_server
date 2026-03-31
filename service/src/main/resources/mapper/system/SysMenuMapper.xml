@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.system.SysMenuMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.system.SysMenu">
+        <!--@mbg.generated-->
+        <!--@Table sys_menu-->
+        <id column="menu_id" jdbcType="BIGINT" property="menuId"/>
+        <result column="menu_name" jdbcType="VARCHAR" property="menuName"/>
+        <result column="parent_id" jdbcType="BIGINT" property="parentId"/>
+        <result column="order_num" jdbcType="INTEGER" property="orderNum"/>
+        <result column="path" jdbcType="VARCHAR" property="path"/>
+        <result column="component" jdbcType="VARCHAR" property="component"/>
+        <result column="is_frame" jdbcType="INTEGER" property="isFrame"/>
+        <result column="menu_type" jdbcType="CHAR" property="menuType"/>
+        <result column="visible" jdbcType="CHAR" property="visible"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+        <result column="perms" jdbcType="VARCHAR" property="perms"/>
+        <result column="icon" jdbcType="VARCHAR" property="icon"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        menu_id, menu_name, parent_id, order_num, path, component, is_frame, menu_type,
+        visible, status, perms, icon, create_by, create_time, update_by, update_time, remark
+    </sql>
+    <sql id="findMenuVo">
+        select m.menu_id,
+               m.menu_name,
+               m.parent_id,
+               m.order_num,
+               m.path,
+               m.component,
+               m.is_frame,
+               m.menu_type,
+               m.visible,
+               m.status,
+               m.perms,
+               m.icon,
+               m.create_time
+        from sys_menu m
+    </sql>
+    <!--
+        /**
+         * 根据用户ID查询菜单权限
+         *
+         * @param userId 用户ID
+         *
+         * @return 菜单权限列表
+         */
+        List<String> findMenuPermsByUserId(@Param("userId") Long userId);
+    -->
+    <select id="findMenuPermsByUserId" resultType="java.lang.String">
+        select distinct m.perms
+        from sys_menu m
+                     left join sys_role_menu rm on m.menu_id = rm.menu_id
+                     left join sys_user_role ur on rm.role_id = ur.role_id
+                     left join sys_role r on r.role_id = ur.role_id
+        where m.status = '0'
+          and r.status = '0'
+          and ur.user_id = #{userId}
+    </select>
+    <!--
+    /**
+     * 根据用户ID查询菜单
+     *
+     * @return 菜单列表
+     */
+    List<SysMenu> findMenuTreeAll();
+    -->
+    <select id="findMenuTreeAll" resultMap="BaseResultMap">
+        select distinct m.menu_id,
+                        m.parent_id,
+                        m.menu_name,
+                        m.path,
+                        m.component,
+                        m.visible,
+                        m.status,
+                        m.perms,
+                        m.is_frame,
+                        m.menu_type,
+                        m.icon,
+                        m.order_num,
+                        m.create_time
+        from sys_menu m
+        where m.menu_type in ('M', 'C')
+          and m.status = '0'
+        order by m.parent_id, m.order_num
+    </select>
+    <!--
+    /**
+     * 根据用户ID查询菜单
+     *
+     * @param userId 用户ID
+     *
+     * @return 菜单列表
+     */
+    List<SysMenu> findMenuTreeByUserId(@Param("userId") Long userId);
+    -->
+    <select id="findMenuTreeByUserId" resultMap="BaseResultMap">
+        select distinct m.menu_id,
+                        m.parent_id,
+                        m.menu_name,
+                        m.path,
+                        m.component,
+                        m.visible,
+                        m.status,
+                        m.perms,
+                        m.is_frame,
+                        m.menu_type,
+                        m.icon,
+                        m.order_num,
+                        m.create_time
+        from sys_menu m
+                     left join sys_role_menu rm on m.menu_id = rm.menu_id
+                     left join sys_user_role ur on rm.role_id = ur.role_id
+                     left join sys_role ro on ur.role_id = ro.role_id
+                     left join sys_user u on ur.user_id = u.user_id
+        where u.user_id = #{userId}
+          and m.menu_type in ('M', 'C')
+          and m.status = '0'
+          AND ro.status = '0'
+        order by m.parent_id, m.order_num
+    </select>
+    <!--
+        /**
+         * 查询系统菜单列表
+         *
+         * @param menu 菜单信息
+         *
+         * @return 菜单列表
+         */
+        List<SysMenu> findMenuList(@Param("menu") SysMenu menu);
+    -->
+    <select id="findMenuList" resultMap="BaseResultMap">
+        <include refid="findMenuVo"/>
+        <where>
+            <if test="menu.menuName != null and menu.menuName != ''">
+                AND menu_name like '%${menu.menuName}%'
+            </if>
+            <if test="menu.visible != null and menu.visible != ''">
+                AND visible = #{menu.visible}
+            </if>
+            <if test="menu.status != null and menu.status != ''">
+                AND status = #{menu.status}
+            </if>
+        </where>
+        order by parent_id, order_num
+    </select>
+    <!--
+       /**
+         * 根据用户查询系统菜单列表
+         *
+         * @param menu 菜单信息
+         *
+         * @return 菜单列表
+         */
+        List<SysMenu> findMenuListByUserId(@Param("menu") SysMenu menu);
+    -->
+    <select id="findMenuListByUserId" resultMap="BaseResultMap">
+        select distinct m.menu_id,
+                        m.parent_id,
+                        m.menu_name,
+                        m.path,
+                        m.component,
+                        m.visible,
+                        m.status,
+                        m.perms,
+                        m.is_frame,
+                        m.menu_type,
+                        m.icon,
+                        m.order_num,
+                        m.create_time
+        from sys_menu m
+                     left join sys_role_menu rm on m.menu_id = rm.menu_id
+                     left join sys_user_role ur on rm.role_id = ur.role_id
+                     left join sys_role ro on ur.role_id = ro.role_id
+                where ur.user_id = #{menu.params.userId}
+        <if test="menu.menuName != null and menu.menuName != ''">
+            AND m.menu_name like '%${menu.menuName}%'
+        </if>
+        <if test="menu.visible != null and menu.visible != ''">
+            AND m.visible = #{menu.visible}
+        </if>
+        <if test="menu.status != null and menu.status != ''">
+            AND m.status = #{menu.status}
+        </if>
+        order by m.parent_id, m.order_num
+    </select>
+    <!--
+        /**
+         * 根据角色ID查询菜单树信息
+         *
+         * @param roleId 角色ID
+         *
+         * @return 选中菜单列表
+         */
+        List<Long> findMenuListByRoleId(@Param("roleId") Long roleId);
+    -->
+    <select id="findMenuListByRoleId" resultType="java.lang.Long">
+        select m.menu_id, m.parent_id
+        from sys_menu m
+                     left join sys_role_menu rm on m.menu_id = rm.menu_id
+        where rm.role_id = #{roleId}
+          and m.menu_id not in (select m.parent_id
+                                from sys_menu m
+                                             inner join sys_role_menu rm on m.menu_id = rm.menu_id and rm.role_id = #{roleId})
+        order by m.parent_id, m.order_num
+    </select>
+    <!--
+        /**
+         * 校验菜单名称是否唯一
+         *
+         * @param menuName 菜单名称
+         * @param parentId 父菜单ID
+         *
+         * @return 结果
+         */
+        SysMenu checkMenuNameUnique(@Param("menuName") String menuName, @Param("parentId") Long parentId);
+    -->
+    <select id="checkMenuNameUnique" resultMap="BaseResultMap">
+        <include refid="findMenuVo"/>
+        where m.menu_name = #{menuName}
+          and m.parent_id = #{parentId}
+    </select>
+</mapper>

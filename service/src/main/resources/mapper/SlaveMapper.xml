@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.SlaveMapper">
+    <select id="findAll" resultType="java.util.Map">
+        select * from ${tableString};
+    </select>
+
+
+    <insert id="saveNewsBaseBm" useGeneratedKeys="true">
+        <choose>
+            <when test="tableString == 'biz_06001026_sxdjw_djdtxx'">
+                insert into ${tableString}(news_id, type_name, news_title, news_content, publish_timec, link, news_image,
+                status_name, del_flag, update_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateBy}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </when>
+            <when test="tableString == 'biz_06001026_sxdjw_gbgzxx'">
+                insert into ${tableString}(news_id, type_name, news_title, news_content, publish_time, link, news_image,
+                shstatus_namezt, del_flag, update_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateBy}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </when>
+            <when test="tableString == 'biz_06001026_sxdjw_zsjsgzxx'">
+                insert into ${tableString}(news_idc, type_name, news_title, news_content, publish_time, link, news_image,
+                status_name, del_flag, update_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateBy}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </when>
+            <when test="tableString == 'biz_06001026_sxdjw_jcdjgzxx'">
+                insert into ${tableString}(news_idjq, type_name, news_title, news_content, publish_time, link, news_image,
+                status_name, del_flag, update_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateTime}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </when>
+            <when test="tableString == 'biz_06001026_sxdjw_rcgzxx'">
+                insert into ${tableString}(news_id, type_name, news_title, news_content, publish_time, link, news_image,
+                status_name, del_flag, gxzupdate_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateBy}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </when>
+            <when test="tableString == 'biz_06001026_sxdjw_djspxx'">
+                insert into ${tableString}(SPMC, type_name, news_title, news_content, publish_time, link, news_image,
+                status_name, del_flag, update_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateBy}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </when>
+            <otherwise>
+                insert into ${tableString}(news_id, type_name, news_title, news_content, publish_time, link, news_image,
+                status_name, del_flag, update_by, update_time, biz_time, op)
+                values
+                (#{newsBase.newsId}, #{newsBase.typeName}, #{newsBase.newsTitle}, #{newsBase.newsContent},
+                #{newsBase.publishTime}, #{newsBase.link}, #{newsBase.newsImage}, #{newsBase.statusName},
+                #{newsBase.delFlag}, #{newsBase.updateBy}, #{newsBase.updateTime},
+                NOW(), 'insert');
+            </otherwise>
+        </choose>
+
+    </insert>
+</mapper>

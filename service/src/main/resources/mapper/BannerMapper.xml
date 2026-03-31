@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.BannerMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.biz.Banner">
+        <!--@mbg.generated-->
+        <!--@Table link-->
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="name" jdbcType="VARCHAR" property="name"/>
+        <result column="image_url" jdbcType="VARCHAR" property="imageUrl"/>
+        <result column="status" jdbcType="INTEGER" property="status"/>
+        <result column="order_num" jdbcType="INTEGER" property="orderNum"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        id, name, image_url, status, order_num, create_by, create_time, update_by,
+        update_time, remark
+    </sql>
+    <sql id="findBannerVo">
+        select
+        <include refid="Base_Column_List"/>
+        from banner
+    </sql>
+    <!--
+       /**
+         * 查询友情链接列表
+         *
+         * @param link 友情链接
+         *
+         * @return 友情链接集合
+         */
+        IPage<Link> findPage(Page<Link> linkPage, @Param("link") Link link);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        <include refid="findBannerVo"/>
+        <where>
+            <if test="banner.name != null  and banner.name != ''">
+                and name like concat('%', #{banner.name}, '%')
+            </if>
+            <if test="banner.status != null  and banner.status != ''">
+                and status = #{banner.status}
+            </if>
+        </where>
+        order by order_num, id desc
+    </select>
+</mapper>

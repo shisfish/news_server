@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.NewsTypeMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.biz.NewsType">
+        <!--@mbg.generated-->
+        <!--@Table news_type-->
+        <id column="news_type_id" jdbcType="BIGINT" property="newsTypeId"/>
+        <result column="news_type_name" jdbcType="VARCHAR" property="newsTypeName"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+        <result column="order_num" jdbcType="INTEGER" property="orderNum"/>
+        <result column="del_flag" jdbcType="CHAR" property="delFlag"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        news_type_id, news_type_name, status, order_num, del_flag, create_by, create_time, update_by,
+        update_time, remark
+    </sql>
+    <sql id="findNewsTypeVo">
+        select
+        <include refid="Base_Column_List"/>
+        from news_type
+    </sql>
+    <!--
+        /**
+         * 条件分页新闻栏目列表
+         *
+         * @param newsTypePage 分页插件
+         * @param newsType         菜单类型
+         *
+         * @return 结果
+         */
+        IPage<NewsType> findPage(Page<NewsType> newsTypePage, @Param("newsType") NewsType newsType);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        <include refid="findNewsTypeVo"/>
+        where del_flag = '0'
+        <if test="newsType.newsTypeName != null and newsType.newsTypeName != ''">
+            and   news_type_name like '%${newsType.newsTypeName}%'
+        </if>
+        <if test="newsType.status != null and newsType.status != ''">
+            and status = #{newsType.status}
+        </if>
+        <if test="newsType.beginTime != null and newsType.beginTime != ''">
+            <!-- 开始时间检索 -->
+            and date_format(create_time, '%y%m%d') &gt;= date_format(#{newsType.beginTime}, '%y%m%d')
+        </if>
+        <if test="newsType.endTime != null and newsType.endTime != ''">
+            <!-- 结束时间检索 -->
+            and date_format(create_time, '%y%m%d') &lt;= date_format(#{newsType.endTime}, '%y%m%d')
+        </if>
+        order by order_num, news_type_id desc
+    </select>
+</mapper>

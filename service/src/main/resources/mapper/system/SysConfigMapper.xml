@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.system.SysConfigMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.system.SysConfig">
+        <!--@mbg.generated-->
+        <!--@Table sys_config-->
+        <id column="config_id" jdbcType="INTEGER" property="configId"/>
+        <result column="config_name" jdbcType="VARCHAR" property="configName"/>
+        <result column="config_key" jdbcType="VARCHAR" property="configKey"/>
+        <result column="config_value" jdbcType="VARCHAR" property="configValue"/>
+        <result column="config_type" jdbcType="CHAR" property="configType"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        config_id, config_name, config_key, config_value, config_type, create_by, create_time,
+        update_by, update_time, remark
+    </sql>
+    <sql id="findConfigVo">
+        select config_id,
+               config_name,
+               config_key,
+               config_value,
+               config_type,
+               create_by,
+               create_time,
+               update_by,
+               update_time,
+               remark
+        from sys_config
+    </sql>
+    <!--
+        /**
+         * 查询参数配置列表
+         *
+         * @param config 参数配置信息
+         *
+         * @return 参数配置集合
+         */
+        IPage<SysConfig> findPage(Page<SysConfig> sysConfigPage, @Param("config") SysConfig config);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        <include refid="findConfigVo"/>
+        <where>
+            <if test="config.configName != null and config.configName != ''">
+                AND config_name like '%${config.configName}%'
+            </if>
+            <if test="config.configType != null and config.configType != ''">
+                AND config_type = #{config.configType}
+            </if>
+            <if test="config.configKey != null and config.configKey != ''">
+                AND config_key like '%${config.configKey}%'
+            </if>
+            <if test="config.beginTime != null and config.beginTime != ''">
+                <!-- 开始时间检索 -->
+                and date_format(create_time, '%y%m%d')>= date_format(#{config.beginTime}, '%y%m%d')
+            </if>
+            <if test="config.endTime != null and config.endTime != ''">
+                <!-- 结束时间检索 -->
+                and date_format(create_time, '%y%m%d') &lt;= date_format(#{config.endTime}, '%y%m%d')
+            </if>
+        </where>
+        order by config_id desc
+    </select>
+</mapper>

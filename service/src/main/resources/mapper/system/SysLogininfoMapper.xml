@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.system.SysLogininfoMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.system.SysLogininfo">
+        <!--@mbg.generated-->
+        <!--@Table sys_logininfo-->
+        <id column="info_id" jdbcType="BIGINT" property="infoId"/>
+        <result column="username" jdbcType="VARCHAR" property="username"/>
+        <result column="ipaddr" jdbcType="VARCHAR" property="ipaddr"/>
+        <result column="login_location" jdbcType="VARCHAR" property="loginLocation"/>
+        <result column="browser" jdbcType="VARCHAR" property="browser"/>
+        <result column="os" jdbcType="VARCHAR" property="os"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+        <result column="msg" jdbcType="VARCHAR" property="msg"/>
+        <result column="login_time" jdbcType="TIMESTAMP" property="loginTime"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        info_id, username, ipaddr, login_location, browser, os, status, msg, login_time
+    </sql>
+    <!--
+       /**
+         * 查询系统登录日志集合
+         *
+         * @param logininfor 访问日志对象
+         *
+         * @return 登录记录集合
+         */
+        IPage<SysLogininfor> findPage(Page<SysLogininfor> sysLogininforPage,@Param("logininfor") SysLogininfor logininfor);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        select info_id,
+               username,
+               ipaddr,
+               login_location,
+               browser,
+               os,
+               status,
+               msg,
+               login_time
+        from sys_logininfo
+        <where>
+            <if test="logininfo.ipaddr != null and logininfo.ipaddr != ''">
+                AND ipaddr like '%${logininfo.ipaddr}%'
+            </if>
+            <if test="logininfo.status != null and logininfo.status != ''">
+                AND status = #{logininfo.status}
+            </if>
+            <if test="logininfo.username != null and logininfo.username != ''">
+                AND username like '%${logininfo.username}%'
+            </if>
+            <if test="logininfo.beginTime != null and logininfo.beginTime != ''">
+                <!-- 开始时间检索 -->
+                and date_format(login_time, '%y%m%d') &gt;= date_format(#{logininfo.beginTime}, '%y%m%d')
+            </if>
+            <if test="logininfo.endTime != null and logininfo.endTime != ''">
+                <!-- 结束时间检索 -->
+                and date_format(login_time, '%y%m%d') &lt;= date_format(#{logininfo.endTime}, '%y%m%d')
+            </if>
+        </where>
+        order by info_id desc
+    </select>
+    <!--
+        /**
+         * 清空系统登录日志
+         *
+         * @return 结果
+         */
+        void cleanLogininfor();
+    -->
+    <update id="cleanLogininfor">
+        truncate table sys_logininfo
+    </update>
+</mapper>

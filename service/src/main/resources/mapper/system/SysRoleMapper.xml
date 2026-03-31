@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.system.SysRoleMapper">
+    <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.system.SysRole">
+        <!--@mbg.generated-->
+        <!--@Table sys_role-->
+        <id column="role_id" jdbcType="BIGINT" property="roleId"/>
+        <result column="role_name" jdbcType="VARCHAR" property="roleName"/>
+        <result column="role_key" jdbcType="VARCHAR" property="roleKey"/>
+        <result column="role_sort" jdbcType="INTEGER" property="roleSort"/>
+        <result column="data_scope" jdbcType="CHAR" property="dataScope"/>
+        <result column="status" jdbcType="CHAR" property="status"/>
+        <result column="del_flag" jdbcType="CHAR" property="delFlag"/>
+        <result column="create_by" jdbcType="VARCHAR" property="createBy"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_by" jdbcType="VARCHAR" property="updateBy"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="remark" jdbcType="VARCHAR" property="remark"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        role_id, role_name, role_key, role_sort, data_scope, status, del_flag, create_by,
+        create_time, update_by, update_time, remark
+    </sql>
+    <sql id="findRoleVo">
+        select distinct r.role_id,
+                        r.role_name,
+                        r.role_key,
+                        r.role_sort,
+                        r.data_scope,
+                        r.status,
+                        r.del_flag,
+                        r.create_time,
+                        r.remark
+        from sys_role r
+                     left join sys_user_role ur on ur.role_id = r.role_id
+                     left join sys_user u on u.user_id = ur.user_id
+                     left join sys_dept d on u.dept_id = d.dept_id
+    </sql>
+    <!--
+        /**
+         * 根据用户ID查询角色
+         *
+         * @param userId 用户ID
+         *
+         * @return 角色列表
+         */
+        List<SysRole> findRolePermissionByUserId(@Param("userId") Long userId);
+    -->
+    <select id="findRolePermsByUserId" resultMap="BaseResultMap">
+        <include refid="findRoleVo"/>
+        where r.del_flag = '0'
+          and ur.user_id = #{userId}
+    </select>
+    <!--
+        /**
+         * 根据用户ID获取角色选择框列表
+         *
+         * @param userId 用户ID
+         *
+         * @return 选中角色ID列表
+         */
+        List<Long> findRoleListByUserId(Long userId);
+    -->
+    <select id="findRoleListByUserId" resultType="java.lang.Long">
+        select r.role_id
+        from sys_role r
+                     left join sys_user_role ur on ur.role_id = r.role_id
+                     left join sys_user u on u.user_id = ur.user_id
+        where u.user_id = #{userId}
+    </select>
+    <!--
+        /**
+         * 根据用户ID查询角色
+         *
+         * @param username 用户名
+         *
+         * @return 角色列表
+         */
+        List<SysRole> findRolesByUsername(@Param("username") String username);
+    -->
+    <select id="findRolesByUsername" resultMap="BaseResultMap">
+        <include refid="findRoleVo"/>
+        WHERE r.del_flag = '0'
+          and u.username = #{username}
+    </select>
+    <!--
+        /**
+         * 根据条件分页查询角色数据
+         *
+         * @param role 角色信息
+         *
+         * @return 角色数据集合信息
+         */
+        IPage<SysRole> findPage(Page<SysRole> sysRolePage,@Param("role") SysRole role);
+    -->
+    <select id="findPage" resultMap="BaseResultMap">
+        <include refid="findRoleVo"/>
+        where r.del_flag = '0'
+        <if test="role.roleName != null and role.roleName != ''">
+            AND r.role_name like '%${role.roleName}%'
+        </if>
+        <if test="role.status != null and role.status != ''">
+            AND r.status = #{role.status}
+        </if>
+        <if test="role.roleKey != null and role.roleKey != ''">
+            AND r.role_key like '%${role.roleKey}%'
+        </if>
+        <if test="role.beginTime != null and role.beginTime != ''">
+            <!-- 开始时间检索 -->
+            and date_format(r.create_time, '%y%m%d') >= date_format(#{role.beginTime}, '%y%m%d')
+        </if>
+        <if test="role.endTime != null and role.endTime != ''">
+            <!-- 结束时间检索 -->
+            AND date_format(r.create_time, '%y%m%d')&lt;= date_format(#{role.endTime}, '%y%m%d')
+        </if>
+        order by r.role_sort
+    </select>
+</mapper>

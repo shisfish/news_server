@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shisfish.news.service.mapper.biz.NewsCollectMapper">
+  <resultMap id="BaseResultMap" type="com.shisfish.news.dao.domain.biz.NewsCollect">
+    <!--@mbg.generated-->
+    <!--@Table news_collect-->
+    <id column="collection_id" jdbcType="BIGINT" property="collectionId" />
+    <result column="news_id" jdbcType="BIGINT" property="newsId" />
+    <result column="user_id" jdbcType="BIGINT" property="userId" />
+    <result column="collect_time" jdbcType="TIMESTAMP" property="collectTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    <!--@mbg.generated-->
+    collection_id, news_id, user_id, collect_time
+  </sql>
+</mapper>
