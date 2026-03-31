@@ -48,6 +48,11 @@ public class NewsWechatServiceImpl extends ServiceImpl<NewsWechatMapper, NewsWec
                 .eq(NewsWechat::getAid, aid));
     }
 
+    public Integer countByLink(String link) {
+        return newsWechatMapper.selectCount(Wrappers.<NewsWechat>lambdaQuery()
+                .eq(NewsWechat::getLink, link));
+    }
+
     @Override
     public List<NewsWechat> getLatestWechatBySpider(WechatColumn wechatColumn) {
         return SpiderUtil.getArticlesHomepage(wechatColumn);
@@ -154,7 +159,54 @@ public class NewsWechatServiceImpl extends ServiceImpl<NewsWechatMapper, NewsWec
     }
 
     @Override
+    public List<Long> spiderShaoxingZugong() {
+        List<NewsWechat> list = SpiderUtil.searchShaoxingZugongArticles();
+        if (CollectionUtil.isEmpty(list)) {
+            return new ArrayList<>();
+        }
+        List<NewsWechat> newList = saveNewsWechatDeDuplicationReturnNew(list);
+        if (CollectionUtil.isEmpty(newList)) {
+            return new ArrayList<>();
+        }
+        return newsService.saveNewsFromWechat();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<Long> spiderNewsByConfig() {
+        List<WechatColumn> columns = wechatProperty.getColumns();
+        if (CollectionUtil.isEmpty(columns)) {
+            return new ArrayList<>();
+        }
+        List<NewsWechat> list = new ArrayList<>();
+        for (WechatColumn column : columns) {
+            List<NewsWechat> newsWechats = getLatestWechatBySpider(column);
+            if (CollectionUtil.isNotEmpty(newsWechats)) {
+                list.addAll(newsWechats);
+            }
+        }
+        if (CollectionUtil.isEmpty(list)) {
+            return new ArrayList<>();
+        }
+        List<NewsWechat> newList = saveNewsWechatDeDuplicationReturnNew(list);
+        if (CollectionUtil.isEmpty(newList)) {
+            return new ArrayList<>();
+        }
+        return newsService.saveNewsFromWechat();
+    }
+
+    @Override
     public Integer countAll() {
         return newsWechatMapper.selectCount(Wrappers.lambdaQuery());
+    }
+
+    private boolean existsNewsWechat(NewsWechat newsWechat) {
+        if (newsWechat == null) {
+            return true;
+        }
+        if (newsWechat.getAid() != null && countByAid(newsWechat.getAid()) > 0) {
+            return true;
+        }
+        return newsWechat.getLink() != null && countByLink(newsWechat.getLink()) > 0;
     }
 }

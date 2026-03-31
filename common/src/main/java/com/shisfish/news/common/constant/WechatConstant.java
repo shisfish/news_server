@@ -9,7 +9,8 @@ public class WechatConstant {
 
     public static final String SHAOXINGZUGONG = "MzIxNDUyMzcwOA==";
 
-    public static final String ARTICAL_APP_URL = "https://mp.weixin.qq.com/cgi-bin/appmsg";
+//    public static final String ARTICAL_APP_URL = "https://mp.weixin.qq.com/cgi-bin/appmsg";
+    public static final String ARTICAL_APP_URL = "https://mp.weixin.qq.com/cgi-bin/appmsgpublish";
 
     /**
      * 首页栏目获取地址
