@@ -35,5 +35,9 @@ public interface INewsWechatService extends IService<NewsWechat> {
 
     List<Long> spiderNews(SpiderNewsDTO spiderNewsDTO);
 
+    List<Long> spiderShaoxingZugong();
+
+    List<Long> spiderNewsByConfig();
+
     Integer countAll();
 }

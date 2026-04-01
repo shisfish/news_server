@@ -115,6 +115,32 @@ public class SpiderController {
         return ResultUtils.success(message);
     }
 
+    @ApiOperation(value = "抓取绍兴组工最新文章", notes = "抓取绍兴组工最新文章")
+    @PostMapping(value = "/spiderShaoxingZugong")
+    public Result spiderShaoxingZugong() {
+        List<Long> newsIds = newsWechatService.spiderShaoxingZugong();
+        String message;
+        if (CollectionUtil.isEmpty(newsIds)) {
+            message = "本次未拉取到文章";
+        } else {
+            message = "本次共拉取到" + newsIds.size() + "篇文章";
+        }
+        return ResultUtils.success(message);
+    }
+
+    @ApiOperation(value = "按配置爬虫获取最新文章", notes = "按配置爬虫获取最新文章")
+    @PostMapping(value = "/spiderNewsByConfig")
+    public Result spiderNewsByConfig() {
+        List<Long> newsIds = newsWechatService.spiderNewsByConfig();
+        String message;
+        if (CollectionUtil.isEmpty(newsIds)) {
+            message = "本次未拉取到文章";
+        } else {
+            message = "本次共拉取到" + newsIds.size() + "篇文章";
+        }
+        return ResultUtils.success(message);
+    }
+
     @ApiOperation(value = "爬虫-提供给旧服务器使用", notes = "爬虫-提供给旧服务器使用")
     @PostMapping(value = "/spiderNewsForOld")
     public Result spiderNewsForOld(@RequestBody SpiderNewsDTO spiderNewsDTO) {

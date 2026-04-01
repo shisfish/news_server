@@ -12,5 +12,6 @@ public class SpiderNewsDTO {
 
     private String token;
     private String cookie;
+    private String accountName;
 
 }
