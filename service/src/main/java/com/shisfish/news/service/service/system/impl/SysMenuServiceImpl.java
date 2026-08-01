@@ -322,6 +322,11 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         if (isMenuFrame(menu)) {
             routerName = StringUtils.EMPTY;
         }
+        // Vue Router 4 要求路由名全局唯一，嵌套路由不能与祖先同名
+        // 当菜单有子菜单时，给父路由name加Index后缀避免冲突
+        else if (CollectionUtils.isNotEmpty(menu.getChildren())) {
+            routerName = routerName + "Index";
+        }
         return routerName;
     }
 

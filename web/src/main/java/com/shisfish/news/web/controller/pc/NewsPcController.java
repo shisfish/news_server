@@ -10,11 +10,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shisfish.news.common.constant.Constants;
 import com.shisfish.news.common.constant.UserConstants;
 import com.shisfish.news.common.core.controller.BaseController;
+import com.shisfish.news.common.exception.CustomException;
 import com.shisfish.news.dao.datatransferobject.biz.NewsWechatDTO;
 import com.shisfish.news.common.properties.WechatProperty;
 import com.shisfish.news.common.result.PageResult;
 import com.shisfish.news.common.result.Result;
 import com.shisfish.news.common.result.ResultUtils;
+import com.shisfish.news.common.utils.ServletUtils;
 import com.shisfish.news.common.utils.file.FileUploadUtils;
 import com.shisfish.news.common.utils.file.FileUtil;
 import com.shisfish.news.common.utils.file.ZipUtil;
@@ -102,12 +104,22 @@ public class NewsPcController extends BaseController {
     @Value(value = "${loadnews.updateFileApi}")
     private String loadnewsUpdateFileApi;
 
+    private static final String HOME_TOKEN = "35a4ca604f8b11f1aff9005056b1c65f";
+
+    private void checkHomeToken() {
+        String homeToken = ServletUtils.getRequest().getHeader("homeToken");
+        if (StringUtils.isEmpty(homeToken) || !HOME_TOKEN.equals(homeToken)) {
+            throw new CustomException("无权限访问", 401);
+        }
+    }
+
     /**
      * 获取所有新闻栏目下拉列表
      */
     @ApiOperation(value = "获取所有新闻栏目列表", notes = "获取所有新闻栏目列表")
     @GetMapping("/listType")
     public Result<List<NewsType>> listType() {
+        checkHomeToken();
         return ResultUtils.success(newsTypeService.list(new LambdaQueryWrapper<NewsType>()
                 .select(NewsType::getNewsTypeId, NewsType::getNewsTypeName, NewsType::getStatus)
                 .eq(NewsType::getDelFlag, UserConstants.NORMAL)
@@ -119,6 +131,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "条件分页查询Banner列表", notes = "条件分页查询新闻Banner详情")
     @GetMapping("/listBanner/{page}/{size}")
     public PageResult<List<Banner>> listBanner(@PathVariable("page") int page, @PathVariable("size") int size) {
+        checkHomeToken();
         Banner banner = new Banner();
         // 新闻只查询审核通过的
         banner.setStatus(Constants.AuditFlag.AUDIT_PASSED);
@@ -129,6 +142,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "条件分页查询新闻列表", notes = "条件分页查询新闻列表详情")
     @GetMapping("/listNews/{page}/{size}")
     public PageResult<List<News>> listNews(@PathVariable("page") int page, @PathVariable("size") int size, Long newsTypeId, Integer subject) {
+        checkHomeToken();
         News news = new News();
         news.setNewsTypeId(newsTypeId);
         news.setSubject(subject);
@@ -141,6 +155,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "条件分页查询新闻列表", notes = "条件分页查询新闻列表详情")
     @GetMapping("/listNewsWithImage/{page}/{size}")
     public PageResult<List<News>> listNewsWithImage(@PathVariable("page") int page, @PathVariable("size") int size, Long newsTypeId) {
+        checkHomeToken();
         News news = new News();
         if (newsTypeId == null) {
             newsTypeId = 1L;
@@ -156,6 +171,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取新闻详细信息", notes = "获取新闻详细信息详情")
     @GetMapping(value = "/news/{newsId}")
     public Result<News> getInfo(@PathVariable("newsId") Long newsId) {
+        checkHomeToken();
         return ResultUtils.success(newsService.findNewsById(newsId));
     }
 
@@ -165,6 +181,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取新闻详细信息", notes = "获取新闻详细信息详情")
     @GetMapping(value = "/saveNewsBySpider")
     public Result saveNewsBySpider() {
+        checkHomeToken();
         newsService.saveNewsBySpider();
         return ResultUtils.success();
     }
@@ -172,6 +189,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取新闻详细信息", notes = "获取新闻详细信息详情")
     @GetMapping(value = "/reloadNewsFromNewsWechat")
     public Result reloadNewsFromNewsWechat(Integer startId) {
+        checkHomeToken();
         newsService.reloadNewsFromNewsWechat(startId);
         return ResultUtils.success();
     }
@@ -179,6 +197,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "通用上传", notes = "通用上传详情")
     @PostMapping("/downloadFile")
     public Result downloadFile(String fileUrl) throws Exception {
+        checkHomeToken();
         String filePath = FileUtil.downloadImage(fileUrl);
         String url = "http://localhost:9000" + filePath;
         return ResultUtils.success(url);
@@ -186,6 +205,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "按类型下载", notes = "通用上传详情")
     @GetMapping("/downloadHtmlImage")
     public Result downloadHtmlImage(Long newsId, String fileUrl, String fileType, String fileName) throws Exception {
+        checkHomeToken();
         String filePath = FileUtil.downloadHtmlFile(newsId, fileUrl, fileType, fileName);
         String url = "http://localhost:9000" + filePath;
         return ResultUtils.success(url);
@@ -194,6 +214,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "按类型下载", notes = "通用上传详情")
     @GetMapping("/test")
     public Result test() throws Exception {
+        checkHomeToken();
          File file = new File("D:\\workspace\\local-workspace\\news\\uploadPath\\html\\1\\download.html");
          BufferedReader reader = new BufferedReader(new FileReader(file));
          StringBuilder stringBuilder = new StringBuilder();
@@ -427,6 +448,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "按类型下载", notes = "通用上传详情")
     @GetMapping("/getNewsFromOtherCompute")
     public Result getNewsFromOtherCompute() throws Exception {
+        checkHomeToken();
         String url = loadnewsUrl;
         String wechatinfoFile = loadnewsFileName;
         String filePath = FileUploadUtils.defaultBaseDir + File.separator + wechatinfoFile;
