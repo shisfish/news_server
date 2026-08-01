@@ -121,6 +121,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean insertUser(SysUser user) {
+        // 首次登录需强制修改密码
+        user.setPwdResetFlag(1);
         // 新增用户信息
         boolean flag = saveOrUpdate(user);
         // 新增用户与角色管理

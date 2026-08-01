@@ -132,6 +132,7 @@ public class SysLoginService {
         ehcacheUtil.deleteLoginLockCache(lockUserNameKey);
 //        redisService.deleteObject(failureCountKey);
         ehcacheUtil.deleteLoginFailureCountCache(lockUserNameKey);
+
         // 生成token
         return tokenService.createToken(loginUser);
     }

@@ -97,7 +97,7 @@ jwt:
   header: Authorization   # 令牌前缀
   token-start-with: Bearer   # 必须使用最少88位的Base64对该令牌进行编码
   base64-secret: ZmQ0ZGI5NjQ0MDQwY2I4MjMxY2Y3ZmI3MjdhN2ZmMjNhODViOTg1ZGE0NTBjMGM4NDA5NzYxMjdjOWMwYWRmZTBlZjlhNGY3ZTg4Y2U3YTE1ODVkZDU5Y2Y3OGYwZWE1NzUzNWQ2YjFjZDc0NGMxZWU2MmQ3MjY1NzJmNTE0MzI=
-  token-validity-in-minutes: 30   # 令牌过期时间 默认30min
+  token-validity-in-minutes: 15   # 令牌过期时间 默认15min
 
 loadnews:
   url: http://127.0.0.1:9100/

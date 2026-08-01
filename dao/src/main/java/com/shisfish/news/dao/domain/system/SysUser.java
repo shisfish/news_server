@@ -124,6 +124,12 @@ public class SysUser extends BaseEntity implements Serializable {
     @TableField(value = "login_date")
     private Date loginDate;
 
+    /**
+     * 首次登录改密标记：1-未修改，0-已修改
+     */
+    @TableField(value = "pwd_reset_flag")
+    private Integer pwdResetFlag;
+
 
     /////////////////////////////////// 附加  ///////////////////////////////////
 

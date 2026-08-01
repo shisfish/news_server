@@ -46,9 +46,9 @@ public class TokenService {
      */
     protected static final long MILLIS_MINUTE = 60 * MILLIS_SECOND;
     /**
-     * 20分钟
+     * 5分钟（Token有效期15分钟，距过期5分钟内刷新）
      */
-    private static final Long MILLIS_MINUTE_TEN = 20 * 60 * 1000L;
+    private static final Long MILLIS_MINUTE_TEN = 5 * 60 * 1000L;
 
     /**
      * 获取用户身份信息

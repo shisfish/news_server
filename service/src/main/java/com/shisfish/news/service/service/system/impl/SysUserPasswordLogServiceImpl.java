@@ -8,6 +8,8 @@ import com.shisfish.news.service.service.system.ISysUserPasswordLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @author shisfish
  * @date 2023/8/29
@@ -25,5 +27,13 @@ public class SysUserPasswordLogServiceImpl extends ServiceImpl<SysUserPasswordLo
                 .eq(SysUserPasswordLog::getUserId, userId)
                 .orderByDesc(SysUserPasswordLog::getCreateTime)
                 .last(" limit 1"));
+    }
+
+    @Override
+    public List<SysUserPasswordLog> getRecentPasswordLogs(Long userId, int limit) {
+        return sysUserPasswordLogMapper.selectList(Wrappers.<SysUserPasswordLog>lambdaQuery()
+                .eq(SysUserPasswordLog::getUserId, userId)
+                .orderByDesc(SysUserPasswordLog::getCreateTime)
+                .last("limit " + limit));
     }
 }

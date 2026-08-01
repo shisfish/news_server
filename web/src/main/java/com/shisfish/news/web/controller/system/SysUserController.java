@@ -11,9 +11,13 @@ import com.shisfish.news.common.lang.enums.BusinessType;
 import com.shisfish.news.common.result.PageResult;
 import com.shisfish.news.common.result.Result;
 import com.shisfish.news.common.result.ResultUtils;
+import com.shisfish.news.common.result.code.ResponseCode;
+import com.shisfish.news.common.utils.PasswordGenerator;
 import com.shisfish.news.common.utils.SecurityUtils;
 import com.shisfish.news.common.utils.string.StringUtils;
+import com.shisfish.news.dao.domain.system.SysUserPasswordLog;
 import com.shisfish.news.service.service.system.ISysRoleService;
+import com.shisfish.news.service.service.system.ISysUserPasswordLogService;
 import com.shisfish.news.service.service.system.ISysUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -49,6 +53,9 @@ public class SysUserController extends BaseController {
 
     @Autowired
     private ISysUserService sysUserService;
+
+    @Autowired
+    private ISysUserPasswordLogService sysUserPasswordLogService;
 
     @Autowired
     private ISysRoleService sysRoleService;
@@ -113,7 +120,13 @@ public class SysUserController extends BaseController {
         }
         user.setCreateBy(SecurityUtils.getUsername());
         user.setCreateTime(new Date());
-        user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
+
+        String plainPassword = user.getPassword();
+        if (StringUtils.isEmpty(plainPassword)) {
+            return ResultUtils.error(ResponseCode.PASSWORD_EMPTY.getCode(), ResponseCode.PASSWORD_EMPTY.getMsg());
+        }
+        user.setPassword(SecurityUtils.encryptPassword(plainPassword));
+
         return toResult(sysUserService.insertUser(user));
     }
 
@@ -159,9 +172,21 @@ public class SysUserController extends BaseController {
         log.debug("用户对象->{}", user);
         // 校验用户是否允许操作 不允许操作超级管理员用户
         sysUserService.checkUserAllowed(user);
+
+        // 校验最近3次历史密码
+        List<SysUserPasswordLog> recentLogs = sysUserPasswordLogService
+                .getRecentPasswordLogs(user.getUserId(), 3);
+        for (SysUserPasswordLog log : recentLogs) {
+            if (SecurityUtils.matchesPassword(user.getPassword(), log.getPassword())) {
+                return ResultUtils.error(ResponseCode.PASSWORD_REUSE_HISTORY.getCode(), ResponseCode.PASSWORD_REUSE_HISTORY.getMsg());
+            }
+        }
+
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         user.setUpdateBy(SecurityUtils.getUsername());
         user.setUpdateTime(new Date());
+        // 重置密码后强制用户下次登录修改初始密码
+        user.setPwdResetFlag(1);
         return toResult(sysUserService.resetPwd(user));
     }
 

@@ -7,10 +7,13 @@ import com.shisfish.news.common.lang.annotation.Log;
 import com.shisfish.news.common.lang.enums.BusinessType;
 import com.shisfish.news.common.result.Result;
 import com.shisfish.news.common.result.ResultUtils;
+import com.shisfish.news.common.result.code.ResponseCode;
 import com.shisfish.news.common.utils.SecurityUtils;
 import com.shisfish.news.common.utils.ServletUtils;
 import com.shisfish.news.common.utils.file.FileUploadUtils;
+import com.shisfish.news.dao.domain.system.SysUserPasswordLog;
 import com.shisfish.news.framework.security.service.TokenService;
+import com.shisfish.news.service.service.system.ISysUserPasswordLogService;
 import com.shisfish.news.service.service.system.ISysUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -26,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * @Author: shisfish
@@ -40,6 +44,9 @@ public class SysProfileController {
 
     @Autowired
     private ISysUserService sysUserService;
+
+    @Autowired
+    private ISysUserPasswordLogService sysUserPasswordLogService;
 
     @Autowired
     private TokenService tokenService;
@@ -91,15 +98,31 @@ public class SysProfileController {
         LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
         String username = loginUser.getUsername();
         String password = loginUser.getPassword();
+
+        // 校验最近3次历史密码
+        List<SysUserPasswordLog> recentLogs = sysUserPasswordLogService
+                .getRecentPasswordLogs(loginUser.getUser().getUserId(), 3);
+        for (SysUserPasswordLog log : recentLogs) {
+            if (SecurityUtils.matchesPassword(newPassword, log.getPassword())) {
+                return ResultUtils.error(ResponseCode.PASSWORD_REUSE_HISTORY.getCode(), ResponseCode.PASSWORD_REUSE_HISTORY.getMsg());
+            }
+        }
+
         if (!SecurityUtils.matchesPassword(oldPassword, password)) {
-            return ResultUtils.error("修改密码失败，旧密码错误");
+            return ResultUtils.error(ResponseCode.OLD_PASSWORD_ERROR.getCode(), ResponseCode.OLD_PASSWORD_ERROR.getMsg());
         }
         if (SecurityUtils.matchesPassword(newPassword, password)) {
-            return ResultUtils.error("新密码不能与旧密码相同");
+            return ResultUtils.error(ResponseCode.PASSWORD_SAME_AS_OLD.getCode(), ResponseCode.PASSWORD_SAME_AS_OLD.getMsg());
         }
         if (sysUserService.updateUserPwd(username, SecurityUtils.encryptPassword(newPassword))) {
             // 更新缓存用户密码
             loginUser.getUser().setPassword(SecurityUtils.encryptPassword(newPassword));
+            // 清除首次登录改密标记
+            SysUser updateUser = new SysUser();
+            updateUser.setUserId(loginUser.getUser().getUserId());
+            updateUser.setPwdResetFlag(0);
+            sysUserService.updateUserProfile(updateUser);
+            loginUser.getUser().setPwdResetFlag(0);
             tokenService.setLoginUser(loginUser);
             return ResultUtils.success();
         }

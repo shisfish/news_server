@@ -18,6 +18,7 @@ import com.shisfish.news.service.service.system.ISysMenuService;
 import com.shisfish.news.service.service.system.ISysUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -121,17 +122,30 @@ SysLoginController {
         // 获取最后一次修改密码时间
         SysUserPasswordLog sysUserPasswordLog = sysUserPasswordLogService.getLatestLog(loginUser.getUser().getUserId());
         if (sysUserPasswordLog == null) {
-            return ResultUtils.error(ResponseCode.UPDATE_PASSWORD.getCode(), ResponseCode.UPDATE_PASSWORD.getMsg());
+            return ResultUtils.error(ResponseCode.UPDATE_PASSWORD.getCode(), "请先修改初始密码");
         }
 
         Date latestModifyDate = sysUserPasswordLog.getCreateTime();
         Calendar instance = Calendar.getInstance();
         instance.setTime(latestModifyDate);
-        instance.add(Calendar.DAY_OF_MONTH, 30);
+
+        // 管理员30天，普通用户90天（判断角色是否为管理员，roleKey包含admin即为管理员）
+        Set<String> roles = sysPermissionService.getRolePermission(loginUser.getUser());
+        boolean isAdmin = roles.stream().anyMatch(role -> "admin".equalsIgnoreCase(role.trim()));
+        int validDays = isAdmin ? 30 : 90;
+        instance.add(Calendar.DAY_OF_YEAR, validDays);
+
         Date now = new Date();
         if (now.before(instance.getTime())) {
+            // 提前7天警告
+            Calendar warn = Calendar.getInstance();
+            warn.setTime(instance.getTime());
+            warn.add(Calendar.DAY_OF_YEAR, -7);
+            if (now.after(warn.getTime())) {
+                return ResultUtils.error(ResponseCode.PASSWORD_WILL_EXPIRE.getCode(), "密码即将过期，请及时修改");
+            }
             return ResultUtils.success();
         }
-        return ResultUtils.error(ResponseCode.UPDATE_PASSWORD.getCode(), ResponseCode.UPDATE_PASSWORD.getMsg());
+        return ResultUtils.error(ResponseCode.PASSWORD_EXPIRED.getCode(), "密码已过期，请立即修改");
     }
 }
