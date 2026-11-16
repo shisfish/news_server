@@ -104,4 +104,20 @@ loadnews:
   fileName: wechatinfo.json
   updateFileApi: loadnews/wechat/updateFile
 
+# 门户接口 HMAC 签名密钥（与前端 news_home/src/utils/request.js 中 SIGN_SECRET 保持一致）
+# 生产环境请通过环境变量 NEWS_SIGN_SECRET 覆盖，避免硬编码
+news:
+  sign:
+    secret: ${NEWS_SIGN_SECRET:sxdj-home-2026-sign-key}
+
+# 安全整改（2026-11-16）：显式收敛 actuator 暴露面，仅 health/info，且需鉴权
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
 

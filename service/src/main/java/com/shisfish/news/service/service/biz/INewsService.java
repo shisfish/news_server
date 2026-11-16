@@ -40,6 +40,14 @@ public interface INewsService extends IService<News> {
     News findNewsById(Long newsId);
 
     /**
+     * 查询已发布且公开的新闻（供 PC 门户详情使用，越权防护）
+     *
+     * @param newsId 新闻ID
+     * @return 已发布且公开的新闻，不满足条件返回 null
+     */
+    News findPublishedNewsById(Long newsId);
+
+    /**
      * 新增新闻
      *
      * @param news 新闻

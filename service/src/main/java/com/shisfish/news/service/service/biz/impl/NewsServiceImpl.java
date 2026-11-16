@@ -107,6 +107,19 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News> implements IN
         return getById(newsId);
     }
 
+    @Override
+    public News findPublishedNewsById(Long newsId) {
+        if (newsId == null) {
+            return null;
+        }
+        return getOne(new LambdaQueryWrapper<News>()
+                .eq(News::getNewsId, newsId)
+                .eq(News::getStatus, Constants.AuditFlag.AUDIT_PASSED)
+                .eq(News::getIsPublic, UserConstants.NewsPublic.PUBLIC)
+                .eq(News::getDelFlag, UserConstants.NORMAL)
+                .last("limit 1"));
+    }
+
     /**
      * 新增新闻
      *
@@ -423,8 +436,12 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News> implements IN
 
     @Override
     public List<News> listUnStatic() {
+        // 安全整改：仅审核通过的稿件允许静态化，避免未发布稿生成匿名可读正文页
         return newsMapper.selectList(Wrappers.<News>lambdaQuery()
-                .eq(News::getToStatic, 0));
+                .eq(News::getToStatic, 0)
+                .eq(News::getStatus, Constants.AuditFlag.AUDIT_PASSED)
+                .eq(News::getIsPublic, UserConstants.NewsPublic.PUBLIC)
+                .eq(News::getDelFlag, UserConstants.NORMAL));
     }
 
     @Override

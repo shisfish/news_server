@@ -17,6 +17,7 @@ import com.shisfish.news.common.result.PageResult;
 import com.shisfish.news.common.result.Result;
 import com.shisfish.news.common.result.ResultUtils;
 import com.shisfish.news.common.utils.ServletUtils;
+import com.shisfish.news.common.utils.SignUtil;
 import com.shisfish.news.common.utils.file.FileUploadUtils;
 import com.shisfish.news.common.utils.file.FileUtil;
 import com.shisfish.news.common.utils.file.ZipUtil;
@@ -56,6 +57,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -104,11 +107,19 @@ public class NewsPcController extends BaseController {
     @Value(value = "${loadnews.updateFileApi}")
     private String loadnewsUpdateFileApi;
 
-    private static final String HOME_TOKEN = "35a4ca604f8b11f1aff9005056b1c65f";
+    @Value("${news.sign.secret}")
+    private String signSecret;
 
-    private void checkHomeToken() {
-        String homeToken = ServletUtils.getRequest().getHeader("homeToken");
-        if (StringUtils.isEmpty(homeToken) || !HOME_TOKEN.equals(homeToken)) {
+    /**
+     * 统一签名校验：替换原硬编码 homeToken。
+     * 前端按 method + "\n" + path + "\n" + timestamp + "\n" + nonce 计算 HMAC-SHA256。
+     */
+    private void checkSign() {
+        HttpServletRequest request = ServletUtils.getRequest();
+        boolean pass = SignUtil.verify(signSecret, request.getMethod(), request.getRequestURI(),
+                request.getHeader("X-Sign-Timestamp"), request.getHeader("X-Sign-Nonce"),
+                request.getHeader("X-Sign"));
+        if (!pass) {
             throw new CustomException("无权限访问", 401);
         }
     }
@@ -119,7 +130,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取所有新闻栏目列表", notes = "获取所有新闻栏目列表")
     @GetMapping("/listType")
     public Result<List<NewsType>> listType() {
-        checkHomeToken();
+        checkSign();
         return ResultUtils.success(newsTypeService.list(new LambdaQueryWrapper<NewsType>()
                 .select(NewsType::getNewsTypeId, NewsType::getNewsTypeName, NewsType::getStatus)
                 .eq(NewsType::getDelFlag, UserConstants.NORMAL)
@@ -131,7 +142,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "条件分页查询Banner列表", notes = "条件分页查询新闻Banner详情")
     @GetMapping("/listBanner/{page}/{size}")
     public PageResult<List<Banner>> listBanner(@PathVariable("page") int page, @PathVariable("size") int size) {
-        checkHomeToken();
+        checkSign();
         Banner banner = new Banner();
         // 新闻只查询审核通过的
         banner.setStatus(Constants.AuditFlag.AUDIT_PASSED);
@@ -142,7 +153,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "条件分页查询新闻列表", notes = "条件分页查询新闻列表详情")
     @GetMapping("/listNews/{page}/{size}")
     public PageResult<List<News>> listNews(@PathVariable("page") int page, @PathVariable("size") int size, Long newsTypeId, Integer subject) {
-        checkHomeToken();
+        checkSign();
         News news = new News();
         news.setNewsTypeId(newsTypeId);
         news.setSubject(subject);
@@ -155,7 +166,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "条件分页查询新闻列表", notes = "条件分页查询新闻列表详情")
     @GetMapping("/listNewsWithImage/{page}/{size}")
     public PageResult<List<News>> listNewsWithImage(@PathVariable("page") int page, @PathVariable("size") int size, Long newsTypeId) {
-        checkHomeToken();
+        checkSign();
         News news = new News();
         if (newsTypeId == null) {
             newsTypeId = 1L;
@@ -171,8 +182,12 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取新闻详细信息", notes = "获取新闻详细信息详情")
     @GetMapping(value = "/news/{newsId}")
     public Result<News> getInfo(@PathVariable("newsId") Long newsId) {
-        checkHomeToken();
-        return ResultUtils.success(newsService.findNewsById(newsId));
+        checkSign();
+        News news = newsService.findPublishedNewsById(newsId);
+        if (news == null) {
+            throw new CustomException("新闻不存在或未发布", 404);
+        }
+        return ResultUtils.success(news);
     }
 
     @Autowired
@@ -181,7 +196,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取新闻详细信息", notes = "获取新闻详细信息详情")
     @GetMapping(value = "/saveNewsBySpider")
     public Result saveNewsBySpider() {
-        checkHomeToken();
+        checkSign();
         newsService.saveNewsBySpider();
         return ResultUtils.success();
     }
@@ -189,7 +204,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "获取新闻详细信息", notes = "获取新闻详细信息详情")
     @GetMapping(value = "/reloadNewsFromNewsWechat")
     public Result reloadNewsFromNewsWechat(Integer startId) {
-        checkHomeToken();
+        checkSign();
         newsService.reloadNewsFromNewsWechat(startId);
         return ResultUtils.success();
     }
@@ -197,7 +212,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "通用上传", notes = "通用上传详情")
     @PostMapping("/downloadFile")
     public Result downloadFile(String fileUrl) throws Exception {
-        checkHomeToken();
+        checkSign();
         String filePath = FileUtil.downloadImage(fileUrl);
         String url = "http://localhost:9000" + filePath;
         return ResultUtils.success(url);
@@ -205,7 +220,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "按类型下载", notes = "通用上传详情")
     @GetMapping("/downloadHtmlImage")
     public Result downloadHtmlImage(Long newsId, String fileUrl, String fileType, String fileName) throws Exception {
-        checkHomeToken();
+        checkSign();
         String filePath = FileUtil.downloadHtmlFile(newsId, fileUrl, fileType, fileName);
         String url = "http://localhost:9000" + filePath;
         return ResultUtils.success(url);
@@ -214,7 +229,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "按类型下载", notes = "通用上传详情")
     @GetMapping("/test")
     public Result test() throws Exception {
-        checkHomeToken();
+        checkSign();
          File file = new File("D:\\workspace\\local-workspace\\news\\uploadPath\\html\\1\\download.html");
          BufferedReader reader = new BufferedReader(new FileReader(file));
          StringBuilder stringBuilder = new StringBuilder();
@@ -448,7 +463,7 @@ public class NewsPcController extends BaseController {
     @ApiOperation(value = "按类型下载", notes = "通用上传详情")
     @GetMapping("/getNewsFromOtherCompute")
     public Result getNewsFromOtherCompute() throws Exception {
-        checkHomeToken();
+        checkSign();
         String url = loadnewsUrl;
         String wechatinfoFile = loadnewsFileName;
         String filePath = FileUploadUtils.defaultBaseDir + File.separator + wechatinfoFile;
@@ -511,26 +526,30 @@ public class NewsPcController extends BaseController {
             newsWechatRel.setCreateTime(new Date());
             newsWechatRelService.save(newsWechatRel);
 
-            try {
-                // 拉取对应的zip包了
-                String zipName = newsWechatDTO.getAid() + ".zip";
-                String zipUrl = url + zipName;
-                String defaultHtmlDownloadDir = FileUtil.getDefaultHtmlDownloadDir();
-                String downloadZipFilePath = FileUtil.getDefaultHtmlDownloadDir() + File.separator + zipName;
-                FileUtil.downloadFile(zipUrl, downloadZipFilePath);
-                // 解压文件
-                ZipUtil.unzip(downloadZipFilePath, defaultHtmlDownloadDir);
-                // 删除压缩包
-                FileUtil.deleteFile(downloadZipFilePath);
+            // 安全整改（2026-11-16）：静态正文页机制废弃，仅审核通过的稿件才允许落地静态页。
+            // 本接口录入的稿件 status=0（审核中），不再生成匿名可读正文页，防止未发布稿泄露。
+            if (Constants.AuditFlag.AUDIT_PASSED == news.getStatus()) {
+                try {
+                    // 拉取对应的zip包了
+                    String zipName = newsWechatDTO.getAid() + ".zip";
+                    String zipUrl = url + zipName;
+                    String defaultHtmlDownloadDir = FileUtil.getDefaultHtmlDownloadDir();
+                    String downloadZipFilePath = FileUtil.getDefaultHtmlDownloadDir() + File.separator + zipName;
+                    FileUtil.downloadFile(zipUrl, downloadZipFilePath);
+                    // 解压文件
+                    ZipUtil.unzip(downloadZipFilePath, defaultHtmlDownloadDir);
+                    // 删除压缩包
+                    FileUtil.deleteFile(downloadZipFilePath);
 
-                // 新闻图片地址修改
-                news.setNewsImage("/resource/html/" + newsWechatDTO.getAid() + "/cover/" + newsWechatDTO.getCoverName());
-                // 静态资源地址修改
-                news.setStaticFilePath("/resource/html/" + newsWechatDTO.getAid() + "/html/" + newsWechatDTO.getStaticName());
-                news.setToStatic(1);
-                newsService.saveOrUpdate(news);
-            } catch (Exception e) {
-                System.out.println("静态资源拉取失败");
+                    // 新闻图片地址修改
+                    news.setNewsImage("/resource/html/" + newsWechatDTO.getAid() + "/cover/" + newsWechatDTO.getCoverName());
+                    // 静态资源地址修改
+                    news.setStaticFilePath("/resource/html/" + newsWechatDTO.getAid() + "/html/" + newsWechatDTO.getStaticName());
+                    news.setToStatic(1);
+                    newsService.saveOrUpdate(news);
+                } catch (Exception e) {
+                    System.out.println("静态资源拉取失败");
+                }
             }
         }
         // 反馈文件状态

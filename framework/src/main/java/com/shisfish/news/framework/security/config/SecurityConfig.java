@@ -5,7 +5,6 @@ import com.shisfish.news.framework.security.handler.AuthenticationEntryPointImpl
 import com.shisfish.news.framework.security.handler.LogoutSuccessHandlerImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -87,14 +86,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 // 过滤请求
                 .authorizeRequests()
                 .antMatchers("/login", "/code/img").anonymous()
-                .antMatchers(HttpMethod.GET, "/*.html", "/**/*.html", "/**/*.css", "/**/*.js").permitAll()
+                // 安全整改（2026-11-16）：移除 /**/*.html 的 permitAll，
+                // 原规则会把 swagger-ui.html 一并匿名放行；门户前端为独立 SPA，不依赖后端 html。
                 .antMatchers("/resource/**").anonymous()
                 .antMatchers("/common/download**").anonymous()
                 .antMatchers("/common/download/resource**").anonymous()
-                .antMatchers("/swagger-ui.html").authenticated()
-                .antMatchers("/swagger-resources/**").authenticated()
-                .antMatchers("/webjars/**").anonymous()
-                .antMatchers("/*/api-docs").authenticated()
+                // swagger / actuator / api-docs 一律拒绝匿名，统一走 authenticated
+                .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**",
+                        "/*/api-docs", "/v2/api-docs", "/actuator/**").authenticated()
                 .antMatchers("/news/pc/**").anonymous()
                 .antMatchers("/news/spider/**").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证
