@@ -35,6 +35,7 @@ import com.shisfish.news.service.service.biz.INewsWechatService;
 import com.shisfish.news.service.service.forest.GatewayClient;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -60,6 +61,7 @@ import java.net.URL;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -76,6 +78,7 @@ import java.util.stream.Collectors;
  * @Version: 1.0.0
  */
 @Api(tags = "PC接口")
+@Slf4j
 @RestController
 @RequestMapping("/news/pc")
 public class NewsPcController extends BaseController {
@@ -116,10 +119,25 @@ public class NewsPcController extends BaseController {
      */
     private void checkSign() {
         HttpServletRequest request = ServletUtils.getRequest();
+        String timestampHeader = request.getHeader("X-Sign-Timestamp");
+        String nonceHeader = request.getHeader("X-Sign-Nonce");
+        String signHeader = request.getHeader("X-Sign");
         boolean pass = SignUtil.verify(signSecret, request.getMethod(), request.getRequestURI(),
-                request.getHeader("X-Sign-Timestamp"), request.getHeader("X-Sign-Nonce"),
-                request.getHeader("X-Sign"));
+                timestampHeader, nonceHeader, signHeader);
         if (!pass) {
+            // TODO 临时排查：用同一密钥在服务端复算期望签名，区分「HMAC 原文不一致」还是「时间窗口/nonce 校验失败」
+            String expected = (timestampHeader == null || nonceHeader == null) ? null
+                    : SignUtil.sign(signSecret, request.getMethod(), request.getRequestURI(), timestampHeader, nonceHeader);
+            long tsDelta = -1L;
+            try {
+                tsDelta = System.currentTimeMillis() - Long.parseLong(timestampHeader);
+            } catch (Exception ignored) {
+                // 时间戳缺失或非法，tsDelta 保持 -1
+            }
+            log.warn("[checkSign] 校验失败 uri={}, 期望签名={}, 收到签名={}, 期望与收到一致={}, tsDelta={}ms, 后端实际收到的请求头={}",
+                    request.getRequestURI(), expected, signHeader, expected != null && expected.equalsIgnoreCase(signHeader),
+                    tsDelta, Collections.list(request.getHeaderNames()));
+
             throw new CustomException("无权限访问", 401);
         }
     }

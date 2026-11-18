@@ -1,10 +1,12 @@
 package com.shisfish.news.common.utils;
 
-import cn.hutool.crypto.digest.HMac;
-import cn.hutool.crypto.digest.HmacAlgorithm;
 import com.shisfish.news.common.utils.string.StringUtils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,13 +21,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  * 注意：纯静态前端无法真正保密密钥，本机制仅提升伪造/重放门槛，不防逆向提取密钥。
  *
+ * <p>实现说明（2026-11-17）：直接用 JDK 自带的 SunJCE 实现，<b>不要</b>换成 Hutool 的
+ * {@code cn.hutool.crypto.digest.HMac}。Hutool 一旦在 classpath 上探测到 BouncyCastle，
+ * 就会优先使用 BC provider，而 Spring Boot fat jar 里嵌套的 bcprov 签名无法通过 JCE 验签，
+ * 运行时会抛 {@code SecurityException: JCE cannot authenticate the provider BC}
+ * （本地 IDE 直接跑能过、打包上线必炸，已踩过的坑）。
+ *
  * @author shisfish
  * @date 2026/11/16
  */
 public class SignUtil {
 
+    /** 签名算法：JDK 自带 provider 即可，不依赖 BouncyCastle */
+    private static final String ALGORITHM = "HmacSHA256";
+
     /** 允许的时间偏移（毫秒） */
-    private static final long WINDOW_MS = 5 * 60 * 1000L;
+    private static final long WINDOW_MS = Duration.ofMinutes(5).toMillis();
 
     /** nginx 转发时可能保留的前缀，签名前统一去掉 */
     private static final String PROD_API_PREFIX = "/prod-api";
@@ -64,12 +75,21 @@ public class SignUtil {
      */
     public static String sign(String secret, String method, String path, String timestamp, String nonce) {
         String data = method + "\n" + normalizePath(path) + "\n" + timestamp + "\n" + nonce;
-        return new HMac(HmacAlgorithm.HmacSHA256, secret.getBytes(StandardCharsets.UTF_8))
-                .digestHex(data.getBytes(StandardCharsets.UTF_8));
+        try {
+            Mac mac = Mac.getInstance(ALGORITHM);
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), ALGORITHM));
+            return toHex(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            // 不吞异常：加密环境异常应当暴露成 500，而不是被误判成"签名不对"返回 401
+            throw new IllegalStateException("HmacSHA256 计算失败：" + e.getMessage(), e);
+        }
     }
 
     /**
      * 校验签名：时间窗口 + 签名值 + nonce 防重放。
+     *
+     * <p>注意：只有"业务上不通过"才返回 false；加密环境异常会直接抛出，
+     * 避免 {@code JCE cannot authenticate the provider BC} 这类问题被降级成 401 而查不出原因。
      *
      * @param secret    密钥
      * @param method    HTTP 方法
@@ -80,24 +100,40 @@ public class SignUtil {
      * @return 通过 true，否则 false
      */
     public static boolean verify(String secret, String method, String path, String timestamp, String nonce, String sign) {
-        try {
-            if (StringUtils.isEmpty(timestamp) || StringUtils.isEmpty(nonce) || StringUtils.isEmpty(sign)) {
-                return false;
-            }
-            long ts = Long.parseLong(timestamp);
-            if (Math.abs(System.currentTimeMillis() - ts) > WINDOW_MS) {
-                return false;
-            }
-            String expected = sign(secret, method, path, timestamp, nonce);
-            if (!expected.equalsIgnoreCase(sign)) {
-                return false;
-            }
-            // 签名通过后再登记 nonce，避免错误请求污染去重缓存
-            long now = System.currentTimeMillis();
-            NONCE_CACHE.entrySet().removeIf(e -> e.getValue() < now - WINDOW_MS);
-            return NONCE_CACHE.putIfAbsent(nonce, now) == null;
-        } catch (Exception e) {
+        if (StringUtils.isEmpty(timestamp) || StringUtils.isEmpty(nonce) || StringUtils.isEmpty(sign)) {
             return false;
         }
+        long ts;
+        try {
+            ts = Long.parseLong(timestamp);
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        if (Math.abs(now - ts) > WINDOW_MS) {
+            return false;
+        }
+        String expected = sign(secret, method, path, timestamp, nonce);
+        if (!expected.equalsIgnoreCase(sign)) {
+            return false;
+        }
+        // 签名通过后再登记 nonce，避免错误请求污染去重缓存
+        NONCE_CACHE.entrySet().removeIf(e -> e.getValue() < now - WINDOW_MS);
+        return NONCE_CACHE.putIfAbsent(nonce, now) == null;
+    }
+
+    /**
+     * 字节数组转小写 hex。
+     *
+     * @param bytes 字节数组
+     * @return 小写 hex 字符串
+     */
+    private static String toHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+            sb.append(Character.forDigit(b & 0xF, 16));
+        }
+        return sb.toString();
     }
 }
